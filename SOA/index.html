@@ -1,0 +1,187 @@
+<html>
+  <head>
+    <script
+      type="text/javascript"
+      src="https://code.jquery.com/jquery-3.6.0.js"
+    ></script>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+      crossorigin="anonymous"
+    ></script>
+  </head>
+  <body class="container py-4">
+    <div class="row mb-3">
+      <div class="col">
+        <button name="btnListar" id="btnListar" class="btn btn-primary">
+          Listar Estudiantes
+        </button>
+        <button name="btnListar" id="btnInsertar" class="btn btn-primary">
+          Insertar Estudiantes
+        </button>
+        <button name="btnListar" id="btnEliminar" class="btn btn-primary">
+          Eliminar
+        </button>
+        <button name="btnListar" id="btnEditar" class="btn btn-primary">
+          Actualizar
+        </button>
+      </div>
+
+  <form id="FormGuardarEst" method="POST">
+  <div class="mb-3">
+    <label class="form-label">Cedula</label>
+    <input type="text" class="form-control" id="txtCedula">
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Nombre</label>
+    <input type="text" class="form-control" id="txtNombre">
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Apellido</label>
+    <input type="text" class="form-control" id="txtApellido">
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Telefono</label>
+    <input type="text" class="form-control" id="txtTelefono">
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Direccion</label>
+    <input type="text" class="form-control" id="txtDireccion">
+  </div>
+</form>
+
+<div id="resultado" class="mt-4"></div>
+
+    
+    <script>
+      const apiUrl="http://localhost/SOA/api.php";
+      function renderTable(response) {
+        if (!response || response.length === 0) {
+          $("#resultado").html(
+            '<div class="alert alert-info">No se encontraron resultados</div>',
+          );
+          return;
+        }
+        let tabla = `<table class="table table-striped table-hover mt-3">
+            <thead class="table-dark">
+                <tr>
+                <th scope="col">Cedula</th>
+                <th scope="col">Nombre</th>
+                <th scope="col">Apellido</th>
+                <th scope="col">Direccion</th>
+                <th scope="col">Telefono</th>
+                </tr>
+            </thead>
+            <tbody>`;
+        response.forEach((estudiante) => {
+          tabla += `<tr>
+                <td>${estudiante.cedula}</td>
+                <td>${estudiante.nombre}</td>
+                <td>${estudiante.apellido}</td>
+                <td>${estudiante.direccion}</td>
+                <td>${estudiante.telefono}</td>
+            </tr>`;
+        });
+        tabla += `</tbody></table>`;
+        $("#resultado").html(tabla);
+      }
+
+      $("#btnListar").click(function () {
+        $.ajax({
+          url: apiUrl,
+          type: "GET",
+          dataType: "json",
+          success: function (response) {
+            renderTable(response);
+          },
+          error: function (xhr, status, error) {
+            console.error("Error:", error);
+            alert("Error al obtener estudiantes");
+          },
+        });
+      });
+
+      $("#btnBuscar").click(function () {
+        const search = $("#txtBuscar").val();
+        $.ajax({
+          url: apiUrl,
+          type: "GET",
+          data: { search: search },
+          dataType: "json",
+          success: function (response) {
+            renderTable(response);
+          },
+          error: function (xhr, status, error) {
+            console.error("Error:", error);
+            alert("Error en la búsqueda");
+          },
+        });
+      });
+
+      // Búsqueda al presionar Enter en el input
+      $("#txtBuscar").on("keypress", function (e) {
+        if (e.which === 13) {
+          $("#btnBuscar").click();
+        }
+      });
+
+      $("#btnInsertar").click(function () {
+        $.ajax({
+          url: apiUrl,
+          type: "POST",
+          data : {
+            txtCedula:$("#txtCedula").val(),
+            txtNombre:$("#txtNombre").val(),
+            txtApellido:$("#txtApellido").val(),
+            txtTelefono:$("#txtTelefono").val(),
+            txtDireccion:$("#txtDireccion").val(),
+          },
+          dataType: "json",
+          success: function (response) {
+          },
+          error: function (xhr, status, error) {
+            console.error();
+            alert("No se inserto");
+          },
+        }); 
+      });
+
+      $("#btnEliminar").click(function () {
+        $.ajax({
+          url: apiUrl + "?txtCedula="+$("#txtCedula").val(),
+          type: "DELETE",
+          dataType: "json",
+          success: function (response) {
+            console.log(response);
+          },
+          error: function (xhr, status, error) {
+            console.error();
+            alert("No se elimino");
+          },
+        }); 
+      });
+
+      $("#btnEditar").click(function () {
+        $.ajax({
+          url: apiUrl + "?txtCedula="+$("#txtCedula").val()+
+          "&txtNombre="+$("#txtNombre").val()+
+          "&txtApellido="+$("#txtApellido").val()+
+          "&txtTelefono="+$("#txtTelefono").val()+
+          "&txtDireccion="+$("#txtDireccion").val(),
+          type: "PUT",
+          dataType: "json",
+          success: function (response) {
+          },
+          error: function (xhr, status, error) {
+            console.error();
+            alert("No se inserto");
+          },
+        }); 
+      });
+    </script>
+  </body>
+</html>
