@@ -1,0 +1,635 @@
+<?php
+
+class Conexion{
+    public function Conectar(){
+        $server = 'localhost';
+        $user = 'root';
+        $password="";
+        $database="soapractica";
+
+        try{
+            $conn=new PDO("mysql:host=$server;dbname=$database;",$user,$password);
+        }catch(Exception $e)
+        {
+            die("Fallo conexión".$e->getMessage());
+        }
+        return $conn;
+    }
+}
+
+?>
+
+---------------------------------------------------------------------------------------
+
+<?php
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type");
+
+include_once('cruds.php');
+
+$method = $_SERVER['REQUEST_METHOD'];
+$table = $_GET['table'] ?? 'estudiante'; // Por defecto estudiante si no se especifica
+$search = $_GET['search'] ?? '';
+
+switch($method) {
+    case 'GET':
+        if ($table == 'materia') {
+            Cruds::selectMat($search);
+        } else {
+            Cruds::selectEst($search);
+        }
+        break;
+
+    case 'POST':
+        if ($table == 'materia') {
+            Cruds::insertMat();
+        } else {
+            Cruds::insertEst();
+        }
+        break;
+
+    case 'DELETE':
+        if ($table == 'materia') {
+            Cruds::deleteMat();
+        } else {
+            Cruds::deleteEst();
+        }
+        break;
+
+    case 'PUT':
+        if ($table == 'materia') {
+            Cruds::updateMat();
+        } else {
+            Cruds::updateEst();
+        }
+        break;
+    
+    case 'OPTIONS':
+        // Manejo de pre-flight para CORS
+        http_response_code(200);
+        break;
+
+    default:
+        http_response_code(405);
+        echo json_encode(["error" => "Método no permitido"]);
+        break;
+}
+?>
+
+-----------------------------------------------------------------------------------------
+
+<?php
+include_once("conexion.php");
+
+class Cruds {
+    // ESTUDIANTES
+    public static function selectEst($search = "") {
+        $objConexion = new Conexion();
+        $conectar = $objConexion->Conectar();
+        
+        if ($search) {
+            $sqlSelect = "SELECT * FROM estudiante WHERE cedula LIKE :search OR nombre LIKE :search OR apellido LIKE :search";
+            $resultado = $conectar->prepare($sqlSelect);
+            $searchTerm = "%$search%";
+            $resultado->bindParam(':search', $searchTerm);
+        } else {
+            $sqlSelect = "SELECT * FROM estudiante";
+            $resultado = $conectar->prepare($sqlSelect);
+        }
+        
+        $resultado->execute();
+        $data = $resultado->fetchAll(PDO::FETCH_ASSOC);
+        echo json_encode($data);
+    }
+
+    public static function insertEst() {
+        $objConecction = new Conexion();
+        $conn = $objConecction->Conectar();
+        
+        $cedula = $_POST['txtCedula'] ?? '';
+        $nombre = $_POST['txtNombre'] ?? '';
+        $apellido = $_POST['txtApellido'] ?? '';
+        $telefono = $_POST['txtTelefono'] ?? '';
+        $direccion = $_POST['txtDireccion'] ?? '';
+        
+        $sqlInsert = "INSERT INTO estudiante (cedula, nombre, apellido, telefono, direccion) VALUES (:cedula, :nombre, :apellido, :telefono, :direccion)";
+        $resultado = $conn->prepare($sqlInsert);
+        $resultado->execute([
+            ':cedula' => $cedula,
+            ':nombre' => $nombre,
+            ':apellido' => $apellido,
+            ':telefono' => $telefono,
+            ':direccion' => $direccion
+        ]);
+
+        echo json_encode("Se inserto correctamente el estudiante");
+    }
+
+    public static function deleteEst() {
+        $objConecction = new Conexion();
+        $conn = $objConecction->Conectar();   
+        $cedula = $_GET['txtCedula'] ?? '';
+        
+        $sqlDelete = "DELETE FROM estudiante WHERE cedula = :cedula";
+        $resultado = $conn->prepare($sqlDelete);
+        $resultado->execute([':cedula' => $cedula]);
+
+        echo json_encode("Se elimino correctamente el estudiante");
+    }
+
+    public static function updateEst() {
+        $objConecction = new Conexion();
+        $conn = $objConecction->Conectar();
+        
+        $cedula = $_GET['txtCedula'] ?? '';
+        $nombre = $_GET['txtNombre'] ?? '';
+        $apellido = $_GET['txtApellido'] ?? '';
+        $telefono = $_GET['txtTelefono'] ?? '';
+        $direccion = $_GET['txtDireccion'] ?? '';
+        
+        $sqlUpdate = "UPDATE estudiante SET nombre = :nombre, apellido = :apellido, telefono = :telefono, direccion = :direccion WHERE cedula = :cedula";
+        $resultado = $conn->prepare($sqlUpdate);
+        $resultado->execute([
+            ':cedula' => $cedula,
+            ':nombre' => $nombre,
+            ':apellido' => $apellido,
+            ':telefono' => $telefono,
+            ':direccion' => $direccion
+        ]);
+
+        echo json_encode("Se actualizo correctamente el estudiante");
+    }
+
+    // MATERIAS
+    public static function selectMat($search = "") {
+        $objConexion = new Conexion();
+        $conectar = $objConexion->Conectar();
+        
+        if ($search) {
+            $sqlSelect = "SELECT * FROM materia WHERE id LIKE :search OR nombre LIKE :search";
+            $resultado = $conectar->prepare($sqlSelect);
+            $searchTerm = "%$search%";
+            $resultado->bindParam(':search', $searchTerm);
+        } else {
+            $sqlSelect = "SELECT * FROM materia";
+            $resultado = $conectar->prepare($sqlSelect);
+        }
+        
+        $resultado->execute();
+        $data = $resultado->fetchAll(PDO::FETCH_ASSOC);
+        echo json_encode($data);
+    }
+
+    public static function insertMat() {
+        $objConecction = new Conexion();
+        $conn = $objConecction->Conectar();
+        
+        $id = $_POST['txtIdMateria'] ?? '';
+        $nombre = $_POST['txtNombreMateria'] ?? '';
+        $estudiante = $_POST['txtCedulaEstudiante'] ?? '';
+        
+        $sqlInsert = "INSERT INTO materia (id, nombre, estudiante) VALUES (:id, :nombre, :estudiante)";
+        $resultado = $conn->prepare($sqlInsert);
+        $resultado->execute([
+            ':id' => $id,
+            ':nombre' => $nombre,
+            ':estudiante' => $estudiante
+        ]);
+
+        echo json_encode("Se inserto correctamente la materia");
+    }
+
+    public static function deleteMat() {
+        $objConecction = new Conexion();
+        $conn = $objConecction->Conectar();   
+        $id = $_GET['txtIdMateria'] ?? '';
+        
+        $sqlDelete = "DELETE FROM materia WHERE id = :id";
+        $resultado = $conn->prepare($sqlDelete);
+        $resultado->execute([':id' => $id]);
+
+        echo json_encode("Se elimino correctamente la materia");
+    }
+
+    public static function updateMat() {
+        $objConecction = new Conexion();
+        $conn = $objConecction->Conectar();
+        
+        $id = $_GET['txtIdMateria'] ?? '';
+        $nombre = $_GET['txtNombreMateria'] ?? '';
+        $estudiante = $_GET['txtCedulaEstudiante'] ?? '';
+        
+        $sqlUpdate = "UPDATE materia SET nombre = :nombre, estudiante = :estudiante WHERE id = :id";
+        $resultado = $conn->prepare($sqlUpdate);
+        $resultado->execute([
+            ':id' => $id,
+            ':nombre' => $nombre,
+            ':estudiante' => $estudiante
+        ]);
+
+        echo json_encode("Se actualizo correctamente la materia");
+    }
+}
+?>
+
+----------------------------------------------------------------------------------------
+package Controller;
+
+import Modelo.Estudiante;
+import java.net.URI;
+import static java.net.URLEncoder.encode;
+import java.nio.charset.StandardCharsets;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+
+public class ConsumirApiPHP {
+
+    private static final String API_URL = "http://localhost/SOA/api.php";
+    private static final HttpClient cliente = HttpClient.newHttpClient();
+
+    // ESTUDIANTES
+    public static String obtenerEstudiantes() {
+        return obtenerEstudiantes(null);
+    }
+
+    public static String obtenerEstudiantes(String busqueda) {
+        String params = "?table=estudiante";
+        if (busqueda != null && !busqueda.isEmpty()) {
+            params += "&search=" + encode(busqueda, StandardCharsets.UTF_8);
+        }
+        return peticionGET(params);
+    }
+
+    public static String insertar(Estudiante e) {
+        String body = "txtCedula=" + encode(e.getCedula(), StandardCharsets.UTF_8)
+                + "&txtNombre=" + encode(e.getNombre(), StandardCharsets.UTF_8)
+                + "&txtApellido=" + encode(e.getApellido(), StandardCharsets.UTF_8)
+                + "&txtTelefono=" + encode(e.getTelefono(), StandardCharsets.UTF_8)
+                + "&txtDireccion=" + encode(e.getDireccion(), StandardCharsets.UTF_8);
+        return peticionPOST("?table=estudiante", body);
+    }
+
+    public static String eliminar(String cedula) {
+        return peticionDELETE("?table=estudiante&txtCedula=" + encode(cedula, StandardCharsets.UTF_8));
+    }
+
+    public static String actualizar(Estudiante e) {
+        String params = "?table=estudiante&txtCedula=" + encode(e.getCedula(), StandardCharsets.UTF_8)
+                + "&txtNombre=" + encode(e.getNombre(), StandardCharsets.UTF_8)
+                + "&txtApellido=" + encode(e.getApellido(), StandardCharsets.UTF_8)
+                + "&txtTelefono=" + encode(e.getTelefono(), StandardCharsets.UTF_8)
+                + "&txtDireccion=" + encode(e.getDireccion(), StandardCharsets.UTF_8);
+        return peticionPUT(params);
+    }
+
+    // MATERIAS
+    public static String obtenerMaterias() {
+        return peticionGET("?table=materia");
+    }
+
+    public static String insertarMateria(String id, String nombre, String cedulaEstudiante) {
+        String body = "txtIdMateria=" + encode(id, StandardCharsets.UTF_8)
+                + "&txtNombreMateria=" + encode(nombre, StandardCharsets.UTF_8)
+                + "&txtCedulaEstudiante=" + encode(cedulaEstudiante, StandardCharsets.UTF_8);
+        return peticionPOST("?table=materia", body);
+    }
+
+    // MÉTODOS GENÉRICOS
+    private static String peticionGET(String params) {
+        try {
+            HttpRequest peticion = HttpRequest.newBuilder().uri(URI.create(API_URL + params)).GET().build();
+            return cliente.send(peticion, HttpResponse.BodyHandlers.ofString()).body();
+        } catch (Exception ex) {
+            return "[]";
+        }
+    }
+
+    private static String peticionPOST(String params, String body) {
+        try {
+            HttpRequest peticion = HttpRequest.newBuilder().uri(URI.create(API_URL + params))
+                    .header("Content-Type", "application/x-www-form-urlencoded")
+                    .POST(HttpRequest.BodyPublishers.ofString(body)).build();
+            return cliente.send(peticion, HttpResponse.BodyHandlers.ofString()).body();
+        } catch (Exception ex) {
+            return "error";
+        }
+    }
+
+    private static String peticionPUT(String params) {
+        try {
+            HttpRequest peticion = HttpRequest.newBuilder().uri(URI.create(API_URL + params))
+                    .PUT(HttpRequest.BodyPublishers.noBody()).build();
+            return cliente.send(peticion, HttpResponse.BodyHandlers.ofString()).body();
+        } catch (Exception ex) {
+            return "error";
+        }
+    }
+
+    private static String peticionDELETE(String params) {
+        try {
+            HttpRequest peticion = HttpRequest.newBuilder().uri(URI.create(API_URL + params)).DELETE().build();
+            return cliente.send(peticion, HttpResponse.BodyHandlers.ofString()).body();
+        } catch (Exception ex) {
+            return "error";
+        }
+    }
+}
+
+----------------------------------------------------------------------------------------
+package Serviets;
+
+import Controller.ConsumirApiPHP;
+import Modelo.Estudiante;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonParser;
+import java.io.IOException;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+@WebServlet(name = "EstudiantesServlet", urlPatterns = {"/estudiantes"})
+public class EstudiantesServlet extends HttpServlet {
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        String accion = request.getParameter("accion");
+        if (accion == null) {
+            String busqueda = request.getParameter("txtBusqueda");
+            String json = ConsumirApiPHP.obtenerEstudiantes(busqueda);
+            JsonArray lista = JsonParser.parseString(json).getAsJsonArray();
+            request.setAttribute("estudiantes", lista);
+            request.getRequestDispatcher("/estudiantes.jsp").forward(request, response);
+        } else if (accion.equals("irAgregar")) {
+            request.getRequestDispatcher("/agregar.jsp").forward(request, response);
+        } else if (accion.equals("editar")) {
+            request.getRequestDispatcher("/editar.jsp").forward(request, response);
+        }
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        
+        Estudiante e = new Estudiante(
+                request.getParameter("cedula"),
+                request.getParameter("nombre"),
+                request.getParameter("apellido"),
+                request.getParameter("telefono"),
+                request.getParameter("direccion")
+        );
+        
+        ConsumirApiPHP.insertar(e);
+        response.sendRedirect(request.getContextPath() + "/estudiantes");
+    }
+
+    @Override
+    protected void doPut(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        
+        Estudiante e = new Estudiante(
+                request.getParameter("cedula"),
+                request.getParameter("nombre"),
+                request.getParameter("apellido"),
+                request.getParameter("telefono"),
+                request.getParameter("direccion")
+        );
+        
+        String respuesta = ConsumirApiPHP.actualizar(e);
+        response.getWriter().write(respuesta);
+    }
+
+    @Override
+    protected void doDelete(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        String cedula = request.getParameter("cedula");
+        String respuesta = ConsumirApiPHP.eliminar(cedula);
+        response.getWriter().write(respuesta);
+    }
+}
+
+----------------------------------------------------------------------------------------
+package Serviets;
+
+import Controller.ConsumirApiPHP;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonParser;
+import java.io.IOException;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+@WebServlet(name = "MateriasServlet", urlPatterns = {"/materias"})
+public class MateriasServlet extends HttpServlet {
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        
+        // Obtener estudiantes para el combo box
+        String jsonEstudiantes = ConsumirApiPHP.obtenerEstudiantes();
+        JsonArray estudiantes = JsonParser.parseString(jsonEstudiantes).getAsJsonArray();
+        
+        // Obtener materias de la API PHP
+        String jsonMaterias = ConsumirApiPHP.obtenerMaterias();
+        JsonArray materias = JsonParser.parseString(jsonMaterias).getAsJsonArray();
+        
+        request.setAttribute("estudiantes", estudiantes);
+        request.setAttribute("materias", materias);
+        request.getRequestDispatcher("/materias.jsp").forward(request, response);
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        
+        String id = request.getParameter("id");
+        String nombre = request.getParameter("nombre");
+        String cedulaEstudiante = request.getParameter("cedulaEstudiante");
+        
+        ConsumirApiPHP.insertarMateria(id, nombre, cedulaEstudiante);
+        
+        response.sendRedirect(request.getContextPath() + "/materias");
+    }
+}
+
+----------------------------------------------------------------------------------------
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Inicio</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    </head>
+    <body>
+        <h1>Bienvenido</h1>
+        <ul>
+            <li><a href="estudiantes">Lista de Estudiantes</a></li>
+            <li><a href="materias">Gestión de Materias</a></li>
+        </ul>
+    </body>
+</html>
+-----------------------------------------------------------------------------------------
+
+<%@page import="com.google.gson.JsonObject"%>
+<%@page import="com.google.gson.JsonArray"%>
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html>
+    <body>
+        <h1>Gestión de Materias</h1>
+        <a href="estudiantes">Ver Estudiantes</a>
+        
+        <form action="materias" method="POST">
+            ID Materia: <input type="text" name="id"><br>
+            Nombre Materia: <input type="text" name="nombre"><br>
+            Estudiante:
+            <select name="cedulaEstudiante">
+                <% 
+                    JsonArray estudiantes = (JsonArray) request.getAttribute("estudiantes");
+                    if (estudiantes != null) {
+                        for (int i = 0; i < estudiantes.size(); i++) {
+                            JsonObject e = estudiantes.get(i).getAsJsonObject();
+                            String cedula = e.get("cedula").getAsString();
+                            String nombre = e.get("nombre").getAsString();
+                %>
+                    <option value="<%=cedula%>"><%=nombre%> (<%=cedula%>)</option>
+                <% 
+                        }
+                    }
+                %>
+            </select>
+            <input type="submit" value="Guardar">
+        </form>
+
+        <h2>Lista de Materias</h2>
+        <table border="1">
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Estudiante (Cédula)</th>
+            </tr>
+            <% 
+                JsonArray materias = (JsonArray) request.getAttribute("materias");
+                if (materias != null) {
+                    for (int i = 0; i < materias.size(); i++) {
+                        JsonObject m = materias.get(i).getAsJsonObject();
+            %>
+                <tr>
+                    <td><%= m.get("id").getAsString() %></td>
+                    <td><%= m.get("nombre").getAsString() %></td>
+                    <td><%= m.get("estudiante").getAsString() %></td>
+                </tr>
+            <% 
+                    }
+                }
+            %>
+        </table>
+    </body>
+</html>
+
+-------------------------------------------------------------------------------------------
+<%@page import="com.google.gson.JsonObject"%>
+<%@page import="com.google.gson.JsonArray"%>
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html>
+    <body>
+        <h1>Lista Estudiantes</h1>
+        <a href="estudiantes?accion=irAgregar">Agregar Estudiante</a> | 
+        <a href="materias">Gestionar Materias</a>
+
+        <br><br>
+        <form action="estudiantes" method="GET">
+            Buscar: <input type="text" name="txtBusqueda" placeholder="Cédula, nombre o apellido...">
+            <input type="submit" value="Buscar">
+            <a href="estudiantes">Limpiar</a>
+        </form>
+        <br>
+
+        <table border="1">
+            <tr>
+                <th>Cedula</th>
+                <th>Nombre</th>
+                <th>Apellido</th>
+                <th>Acciones</th>
+            </tr>
+            <%
+                JsonArray estudiantes = (JsonArray) request.getAttribute("estudiantes");
+                if (estudiantes != null) {
+                    for (int i = 0; i < estudiantes.size(); i++) {
+                        JsonObject e = estudiantes.get(i).getAsJsonObject();
+                        String cedula = e.get("cedula").getAsString();
+            %>
+            <tr>            
+                <td><%=cedula%></td>
+                <td><%=e.get("nombre").getAsString()%></td>
+                <td><%=e.get("apellido").getAsString()%></td>
+                <td>
+                    <a href="estudiantes?accion=editar&cedula=<%=cedula%>&nombre=<%=e.get("nombre").getAsString()%>&apellido=<%=e.get("apellido").getAsString()%>&telefono=<%=e.get("telefono").getAsString()%>&direccion=<%=e.get("direccion").getAsString()%>">Editar</a>
+                    <button onclick="confirmarEliminar('<%=cedula%>')">Eliminar</button>
+                </td>
+            </tr>
+            <%      }
+                }
+            %>
+        </table>
+
+        <script>
+            function confirmarEliminar(cedula) {
+                if (confirm("¿Eliminar " + cedula + "?")) {
+                    fetch('estudiantes?cedula=' + cedula, { method: 'DELETE' })
+                    .then(() => location.reload());
+                }
+            }
+        </script>
+    </body>
+</html>
+
+---------------------------------------------------------------------
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html>
+    <body>
+        <h1>Editar Estudiante</h1>
+        <form id="formEditar">
+            Cédula: <input type="text" name="cedula" value="<%=request.getParameter("cedula")%>" readonly><br>
+            Nombre: <input type="text" name="nombre" value="<%=request.getParameter("nombre") != null ? request.getParameter("nombre") : ""%>"><br>
+            Apellido: <input type="text" name="apellido" value="<%=request.getParameter("apellido") != null ? request.getParameter("apellido") : ""%>"><br>
+            Teléfono: <input type="text" name="telefono" value="<%=request.getParameter("telefono") != null ? request.getParameter("telefono") : ""%>"><br>
+            Dirección: <input type="text" name="direccion" value="<%=request.getParameter("direccion") != null ? request.getParameter("direccion") : ""%>"><br>
+            <button type="button" onclick="actualizar()">Actualizar</button>
+        </form>
+        <a href="estudiantes">Cancelar</a>
+
+        <script>
+            function actualizar(){
+                const params = new URLSearchParams(new FormData(document.getElementById('formEditar')));
+                fetch('estudiantes?' + params.toString(), { method: 'PUT' })
+                .then(() => window.location.href = 'estudiantes');
+            }
+        </script>
+    </body>
+</html>
+---------------------------------------------------------------------------------
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html>
+    <body>
+        <h1>Registrar Estudiante</h1>
+        <form action="estudiantes" method="POST">
+            Cédula: <input type="text" name="cedula"><br>
+            Nombre: <input type="text" name="nombre"><br>
+            Apellido: <input type="text" name="apellido"><br>
+            Teléfono: <input type="text" name="telefono"><br>
+            Dirección: <input type="text" name="direccion"><br>
+            <input type="submit" value="Guardar">
+        </form>
+        <a href="estudiantes">Volver</a>
+    </body>
+</html>
